@@ -22,6 +22,7 @@ export class GameScene extends Phaser.Scene {
   private freezeUntil = 0;
   private unlocked = false;
   private hitsSinceVoice = 0;
+  private lastDirX = 0;
 
   constructor() {
     super("GameScene");
@@ -42,7 +43,7 @@ export class GameScene extends Phaser.Scene {
     );
 
     this.rage.onFull = () => {
-      this.victim.bigReaction();
+      this.victim.knockout(this.lastDirX);
       const hw = this.victim.headWorld();
       hitBurst(this, hw.x, hw.y, true);
       floatingText(this, hw.x, hw.y - 60, true);
@@ -69,9 +70,20 @@ export class GameScene extends Phaser.Scene {
     const ui = this.scene.get("UIScene") as UIScene | undefined;
     if (ui?.hitsUI(pointer)) return;
 
+    if (this.victim.isKO()) {
+      this.victim.poke(pointer.worldX, pointer.worldY, 18);
+      this.freezeUntil = this.time.now + HIT.freezeMs;
+      shake(this, 0, false);
+      floatingText(this, pointer.worldX, pointer.worldY - 40, false);
+      hitBurst(this, pointer.worldX, pointer.worldY, false);
+      this.audio.hit(false);
+      return;
+    }
+
     this.combo.registerHit();
     const strength = this.combo.strength();
     const hit = this.victim.resolveHit(pointer.worldX, pointer.worldY, strength);
+    this.lastDirX = hit.dirX;
     this.rage.addHit();
     this.bruises.maybeAdd(this);
 

@@ -30,24 +30,36 @@ export const COLORS = {
 // Damped spring: snappy return with a touch of overshoot for the "boing".
 export const SPRING = {
   stiffness: 220,
-  damping: 18,
-  maxOffset: 140,
+  damping: 13,
+  maxOffset: 260,
   rotStiffness: 180,
-  rotDamping: 14,
-  maxRot: 1.2,
+  rotDamping: 11,
+  maxRot: 1.9,
 };
 
 export const HIT = {
-  baseImpulse: 520,
-  vertImpulse: 260,
-  rotImpulse: 9,
-  freezeMs: 45,
-  shakeBase: 0.006,
-  shakeMax: 0.03,
+  baseImpulse: 820,
+  vertImpulse: 380,
+  rotImpulse: 14,
+  freezeMs: 55,
+  shakeBase: 0.008,
+  shakeMax: 0.04,
   flashMs: 90,
-  torsoFactor: 0.35,
-  armFactor: 0.9,
+  torsoFactor: 0.5,
+  armFactor: 1.4,
   bodyHalfWidth: 170,
+};
+
+export const RAGDOLL = {
+  floorY: 265,
+  gravity: 2600,
+  damping: 0.99,
+  friction: 0.72,
+  iterations: 8,
+  toppleX: 7,
+  toppleUp: 10,
+  minX: -270,
+  maxX: 270,
 };
 
 export const COMBO = { decayMs: 1200, strengthPerHit: 0.04, maxStrengthHits: 20 };

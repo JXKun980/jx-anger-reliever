@@ -2,7 +2,9 @@ import Phaser from "phaser";
 import { HIT, SPRING, VIRTUAL } from "../constants";
 import type { FaceState, HitResult } from "../types";
 import { Spring1D } from "../systems/Spring";
+import { Ragdoll } from "../systems/Ragdoll";
 import { buildVictim, type VictimParts } from "./VictimArt";
+import { renderRagdoll } from "./RagdollRender";
 
 const REST_X = VIRTUAL.width / 2;
 const REST_Y = VIRTUAL.height * 0.58;
@@ -20,6 +22,9 @@ export class Victim {
   private bodyX = new Spring1D(SPRING.stiffness * 0.9, SPRING.damping);
   private bodyY = new Spring1D(SPRING.stiffness * 0.9, SPRING.damping);
 
+  private ragdoll = new Ragdoll();
+  private ko = false;
+
   private t = 0;
   private faceState: FaceState = "idle";
   private faceTimer = 0;
@@ -34,6 +39,10 @@ export class Victim {
 
   get headRadius(): number {
     return this.parts.headRadius;
+  }
+
+  isKO(): boolean {
+    return this.ko;
   }
 
   /** World point of the head center, for FX spawning. */
@@ -100,17 +109,15 @@ export class Victim {
     this.armR.kick(-HIT.armFactor * 0.6 * s);
   }
 
-  /** Big multi-part reaction when the rage meter fills. */
-  bigReaction(): void {
-    const dir = Math.random() < 0.5 ? -1 : 1;
-    this.headX.kick(dir * HIT.baseImpulse * 2.2);
-    this.headY.kick(-HIT.vertImpulse * 2.4);
-    this.headRot.kick(dir * HIT.rotImpulse * 2.5);
-    this.torsoRot.kick(dir * HIT.rotImpulse * 1.2);
-    this.bodyX.kick(dir * HIT.baseImpulse);
-    this.armL.kick(dir * 2.4);
-    this.armR.kick(-dir * 2.4);
-    this.showFace("dizzy", 1100);
+  knockout(dir: number): void {
+    this.ko = true;
+    this.ragdoll.seed();
+    this.ragdoll.topple(dir === 0 ? (Math.random() < 0.5 ? -1 : 1) : dir);
+    this.showFace("dizzy", 0);
+  }
+
+  poke(worldX: number, worldY: number, power: number): void {
+    this.ragdoll.poke(worldX - REST_X, worldY - REST_Y, power);
   }
 
   private showFace(state: FaceState, ms: number): void {
@@ -154,11 +161,29 @@ export class Victim {
     ]) {
       sp.reset();
     }
+    this.ko = false;
+    this.parts.root.setPosition(REST_X, REST_Y);
+    this.parts.root.setRotation(0);
     this.showFace("idle", 0);
   }
 
   update(dt: number): void {
     this.t += dt;
+    if (this.ko) {
+      this.ragdoll.update(dt);
+      this.parts.root.setPosition(REST_X, REST_Y);
+      renderRagdoll(this.parts, this.ragdoll);
+      this.parts.shadow.y = 340;
+      this.parts.shadow.setAlpha(0.15);
+      return;
+    }
+    this.parts.shadow.setAlpha(0.25);
+    this.stepSprings(dt);
+    this.renderStanding();
+    this.tickFace(dt);
+  }
+
+  private stepSprings(dt: number): void {
     this.headX.update(dt, SPRING.maxOffset);
     this.headY.update(dt, SPRING.maxOffset);
     this.headRot.update(dt, SPRING.maxRot);
@@ -168,27 +193,56 @@ export class Victim {
     this.armR.update(dt, SPRING.maxRot);
     this.bodyX.update(dt, SPRING.maxOffset);
     this.bodyY.update(dt, SPRING.maxOffset);
+  }
 
-    // Idle breathing when settled.
+  private renderStanding(): void {
     const settled = this.headX.atRest && this.headY.atRest && this.torsoRot.atRest;
     const breathe = settled ? Math.sin(this.t * 2) * 3 : 0;
+
+    const tr = this.torsoRot.value;
+    const tx = this.torsoX.value;
+    const cos = Math.cos(tr);
+    const sin = Math.sin(tr);
 
     const p = this.parts;
     p.root.x = REST_X + this.bodyX.value;
     p.root.y = REST_Y + this.bodyY.value;
-    p.head.x = this.headX.value;
-    p.head.y = -210 + this.headY.value + breathe;
-    p.head.rotation = this.headRot.value;
-    p.torso.x = this.torsoX.value;
-    p.torso.rotation = this.torsoRot.value;
+    p.root.rotation = 0;
+
+    p.torso.x = tx;
     p.torso.y = breathe * 0.5;
-    p.armLeft.rotation = this.armL.value;
-    p.armRight.rotation = -this.armR.value;
+    p.torso.rotation = tr;
+
+    p.head.x = tx + 210 * sin + this.headX.value;
+    p.head.y = -210 * cos + this.headY.value + breathe;
+    p.head.rotation = this.headRot.value + tr;
+
+    this.placeJoint(p.armLeft, -104, -70, tx, cos, sin, this.armL.value + tr);
+    this.placeJoint(p.armRight, 104, -70, tx, cos, sin, -this.armR.value + tr);
+    this.placeJoint(p.legLeft, -42, 108, tx, cos, sin, tr * 0.4);
+    this.placeJoint(p.legRight, 42, 108, tx, cos, sin, tr * 0.4);
+
     p.shadow.y = 340 - this.bodyY.value;
     p.shadow.setScale(
       1 - (Math.abs(this.bodyX.value) + Math.abs(this.bodyY.value)) / 900,
     );
+  }
 
+  private placeJoint(
+    obj: Phaser.GameObjects.Container,
+    ox: number,
+    oy: number,
+    tx: number,
+    cos: number,
+    sin: number,
+    rotation: number,
+  ): void {
+    obj.x = tx + ox * cos - oy * sin;
+    obj.y = oy * cos + ox * sin;
+    obj.rotation = rotation;
+  }
+
+  private tickFace(dt: number): void {
     if (this.faceTimer > 0) {
       this.faceTimer -= dt * 1000;
       if (this.faceTimer <= 0 && this.faceState !== "idle") {

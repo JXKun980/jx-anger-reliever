@@ -18,7 +18,8 @@ function roundedRect(
 export interface VictimParts {
   root: Phaser.GameObjects.Container;
   shadow: Phaser.GameObjects.Ellipse;
-  legs: Phaser.GameObjects.Container;
+  legLeft: Phaser.GameObjects.Container;
+  legRight: Phaser.GameObjects.Container;
   torso: Phaser.GameObjects.Container;
   armLeft: Phaser.GameObjects.Container;
   armRight: Phaser.GameObjects.Container;
@@ -36,15 +37,12 @@ export function buildVictim(scene: Phaser.Scene, x: number, y: number): VictimPa
 
   const shadow = scene.add.ellipse(0, 340, 260, 60, COLORS.shadow, 0.25);
 
-  // Legs
-  const legs = scene.add.container(0, 0);
-  const legL = roundedRect(scene, 62, 210, COLORS.pants, 26);
-  legL.setPosition(-42, 210);
-  const legR = roundedRect(scene, 62, 210, COLORS.pants, 26);
-  legR.setPosition(42, 210);
-  const shoe1 = roundedRect(scene, 78, 42, COLORS.pantsShade, 18).setPosition(-42, 300);
-  const shoe2 = roundedRect(scene, 78, 42, COLORS.pantsShade, 18).setPosition(42, 300);
-  legs.add([legL, legR, shoe1, shoe2]);
+  const legLeft = scene.add.container(-42, 108);
+  legLeft.add(roundedRect(scene, 62, 210, COLORS.pants, 26).setPosition(0, 102));
+  legLeft.add(roundedRect(scene, 78, 42, COLORS.pantsShade, 18).setPosition(0, 192));
+  const legRight = scene.add.container(42, 108);
+  legRight.add(roundedRect(scene, 62, 210, COLORS.pants, 26).setPosition(0, 102));
+  legRight.add(roundedRect(scene, 78, 42, COLORS.pantsShade, 18).setPosition(0, 192));
 
   // Torso
   const torso = scene.add.container(0, 0);
@@ -79,12 +77,13 @@ export function buildVictim(scene: Phaser.Scene, x: number, y: number): VictimPa
   head.add(faces.container);
   let faceImage: Phaser.GameObjects.Image | null = null;
 
-  root.add([shadow, legs, armLeft, armRight, torso, head]);
+  root.add([shadow, legLeft, legRight, armLeft, armRight, torso, head]);
 
   return {
     root,
     shadow,
-    legs,
+    legLeft,
+    legRight,
     torso,
     armLeft,
     armRight,

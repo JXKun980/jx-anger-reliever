@@ -31,9 +31,9 @@ export class UIScene extends Phaser.Scene {
 
   create(): void {
     this.comboText = this.add
-      .text(VIRTUAL.width / 2, 150, "", {
+      .text(VIRTUAL.width / 2, 250, "", {
         fontFamily: "system-ui, sans-serif",
-        fontSize: "120px",
+        fontSize: "100px",
         fontStyle: "bold",
         color: "#ffffff",
         stroke: "#22242e",
@@ -43,7 +43,7 @@ export class UIScene extends Phaser.Scene {
       .setDepth(100);
 
     this.bestText = this.add
-      .text(VIRTUAL.width / 2, 232, "", {
+      .text(VIRTUAL.width / 2, 332, "", {
         fontFamily: "system-ui, sans-serif",
         fontSize: "30px",
         color: "#9aa3c0",
@@ -53,7 +53,7 @@ export class UIScene extends Phaser.Scene {
     this.rageBar = this.add.graphics().setDepth(100);
 
     this.rageLabel = this.add
-      .text(160, 84, t().rage, {
+      .text(40, 44, t().rage, {
         fontFamily: "system-ui, sans-serif",
         fontSize: "24px",
         fontStyle: "bold",
@@ -181,9 +181,9 @@ export class UIScene extends Phaser.Scene {
 
   update(): void {
     const rage = Number(this.registry.get(RegKey.Rage) ?? 0);
-    const x = 160;
-    const y = 40;
-    const w = VIRTUAL.width - 320;
+    const x = 180;
+    const y = 44;
+    const w = 380;
     const h = 26;
     const g = this.rageBar;
     g.clear();
