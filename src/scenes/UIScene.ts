@@ -1,25 +1,23 @@
 import Phaser from "phaser";
 import { COLORS, VIRTUAL } from "../constants";
 import { RegKey } from "../types";
-import { t, toggleLang } from "../i18n";
+import { t } from "../i18n";
 import type { GameScene } from "./GameScene";
 
 interface UiButton {
   bounds: Phaser.Geom.Rectangle;
 }
 
+const BTN_R = 46;
+const GEAR = { cx: VIRTUAL.width - 74, cy: 74 };
+const HEART = { cx: VIRTUAL.width - 74, cy: 184 };
+
 export class UIScene extends Phaser.Scene {
   private comboText!: Phaser.GameObjects.Text;
   private bestText!: Phaser.GameObjects.Text;
   private rageBar!: Phaser.GameObjects.Graphics;
   private rageLabel!: Phaser.GameObjects.Text;
-  private healLabel!: Phaser.GameObjects.Text;
-  private faceLabel!: Phaser.GameObjects.Text;
-  private muteLabel!: Phaser.GameObjects.Text;
-  private langLabel!: Phaser.GameObjects.Text;
   private buttons: UiButton[] = [];
-  private faceCleared = true;
-  private muted = false;
 
   constructor() {
     super("UIScene");
@@ -61,69 +59,65 @@ export class UIScene extends Phaser.Scene {
       })
       .setOrigin(0, 0.5);
 
-    this.langLabel = this.makeButton(
-      VIRTUAL.width - 68,
-      50,
-      104,
-      64,
-      t().langLabel,
-      () => this.onLang(),
-    );
-
-    this.healLabel = this.makeButton(150, 1210, 220, 90, t().heal, () =>
-      this.game_().healReset(),
-    );
-    this.faceLabel = this.makeButton(VIRTUAL.width - 150, 1210, 220, 90, t().face, () =>
-      this.onFace(),
-    );
-    this.muteLabel = this.makeButton(
-      VIRTUAL.width / 2,
-      1210,
-      180,
-      90,
-      t().mute,
-      () => this.onMute(),
-    );
+    this.makeCircleButton(GEAR.cx, GEAR.cy, "gear", () => this.game_().openSettings());
+    this.makeCircleButton(HEART.cx, HEART.cy, "heart", () => this.game_().healReset());
 
     this.registry.events.on("changedata", this.onData, this);
     this.updateHud();
   }
 
-  private makeButton(
+  private makeCircleButton(
     cx: number,
     cy: number,
-    w: number,
-    h: number,
-    label: string,
+    icon: "gear" | "heart",
     action: () => void,
-  ): Phaser.GameObjects.Text {
-    const g = this.add.graphics().setDepth(99);
-    g.fillStyle(COLORS.button, 1);
-    g.fillRoundedRect(cx - w / 2, cy - h / 2, w, h, 20);
-    const txt = this.add
-      .text(cx, cy, label, {
-        fontFamily: "system-ui, sans-serif",
-        fontSize: "36px",
-        fontStyle: "bold",
-        color: "#ffffff",
-      })
-      .setOrigin(0.5)
-      .setDepth(100);
+  ): void {
+    const c = this.add.container(cx, cy).setDepth(100);
+    c.add(this.add.circle(0, 0, BTN_R, COLORS.button));
+    c.add(icon === "gear" ? this.drawGear() : this.drawHeart());
 
-    const bounds = new Phaser.Geom.Rectangle(cx - w / 2, cy - h / 2, w, h);
-    this.buttons.push({ bounds });
-    const zone = this.add
-      .zone(cx, cy, w, h)
-      .setInteractive({ useHandCursor: true });
-    zone.on("pointerdown", () => {
-      txt.setScale(0.92);
+    this.buttons.push({
+      bounds: new Phaser.Geom.Rectangle(cx - BTN_R, cy - BTN_R, BTN_R * 2, BTN_R * 2),
     });
+    const zone = this.add
+      .zone(cx, cy, BTN_R * 2, BTN_R * 2)
+      .setInteractive({ useHandCursor: true });
+    zone.on("pointerdown", () => c.setScale(0.9));
     zone.on("pointerup", () => {
-      txt.setScale(1);
+      c.setScale(1);
       action();
     });
-    zone.on("pointerout", () => txt.setScale(1));
-    return txt;
+    zone.on("pointerout", () => c.setScale(1));
+  }
+
+  private drawGear(): Phaser.GameObjects.Graphics {
+    const g = this.add.graphics();
+    const col = 0xcfd6e6;
+    const rInner = BTN_R * 0.4;
+    const rOuter = BTN_R * 0.66;
+    g.lineStyle(9, col, 1);
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      g.beginPath();
+      g.moveTo(Math.cos(a) * rInner, Math.sin(a) * rInner);
+      g.lineTo(Math.cos(a) * rOuter, Math.sin(a) * rOuter);
+      g.strokePath();
+    }
+    g.fillStyle(col, 1);
+    g.fillCircle(0, 0, rInner + 3);
+    g.fillStyle(COLORS.button, 1);
+    g.fillCircle(0, 0, BTN_R * 0.19);
+    return g;
+  }
+
+  private drawHeart(): Phaser.GameObjects.Graphics {
+    const g = this.add.graphics();
+    const lr = BTN_R * 0.32;
+    g.fillStyle(0x33c46b, 1);
+    g.fillCircle(-lr * 0.92, -lr * 0.5, lr);
+    g.fillCircle(lr * 0.92, -lr * 0.5, lr);
+    g.fillTriangle(-lr * 1.85, -lr * 0.2, lr * 1.85, -lr * 0.2, 0, lr * 1.95);
+    return g;
   }
 
   /** True if a pointer landed on a HUD button (so the game ignores it). */
@@ -134,32 +128,9 @@ export class UIScene extends Phaser.Scene {
     return false;
   }
 
-  private onLang(): void {
-    toggleLang();
+  refreshLang(): void {
     this.rageLabel.setText(t().rage);
-    this.healLabel.setText(t().heal);
-    this.faceLabel.setText(t().face);
-    this.muteLabel.setText(this.muted ? t().unmute : t().mute);
-    this.langLabel.setText(t().langLabel);
     this.updateHud();
-  }
-
-  private onFace(): void {
-    if (this.faceCleared) {
-      void this.game_()
-        .pickFace()
-        .then(() => {
-          this.faceCleared = false;
-        });
-    } else {
-      this.game_().clearFace();
-      this.faceCleared = true;
-    }
-  }
-
-  private onMute(): void {
-    this.muted = this.game_().toggleMute();
-    this.muteLabel.setText(this.muted ? t().unmute : t().mute);
   }
 
   private onData = (_p: unknown, key: string): void => {

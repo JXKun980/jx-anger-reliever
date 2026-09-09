@@ -4,7 +4,9 @@
  */
 export class AudioManager {
   private ctx: AudioContext | null = null;
-  muted = false;
+  private master: GainNode | null = null;
+  private enabled = true;
+  private volume = 0.8;
 
   unlock(): void {
     if (!this.ctx) {
@@ -12,9 +14,27 @@ export class AudioManager {
         window.AudioContext ||
         (window as unknown as { webkitAudioContext?: typeof AudioContext })
           .webkitAudioContext;
-      if (Ctor) this.ctx = new Ctor();
+      if (Ctor) {
+        this.ctx = new Ctor();
+        this.master = this.ctx.createGain();
+        this.master.gain.value = this.volume;
+        this.master.connect(this.ctx.destination);
+      }
     }
     if (this.ctx && this.ctx.state === "suspended") void this.ctx.resume();
+  }
+
+  setVolume(v: number): void {
+    this.volume = Math.max(0, Math.min(1, v));
+    if (this.master) this.master.gain.value = this.volume;
+  }
+
+  setEnabled(on: boolean): void {
+    this.enabled = on;
+  }
+
+  private out(): AudioNode {
+    return this.master ?? (this.ctx as AudioContext).destination;
   }
 
   private rnd(base: number, pct: number): number {
@@ -24,7 +44,7 @@ export class AudioManager {
   /** Short percussive impact: noise burst + pitch-down thump. */
   pow(): void {
     const ctx = this.ctx;
-    if (!ctx || this.muted) return;
+    if (!ctx || !this.enabled) return;
     const now = ctx.currentTime;
 
     const noise = ctx.createBufferSource();
@@ -40,7 +60,7 @@ export class AudioManager {
     ng.gain.setValueAtTime(0.0001, now);
     ng.gain.exponentialRampToValueAtTime(0.7, now + 0.002);
     ng.gain.exponentialRampToValueAtTime(0.0001, now + 0.11);
-    noise.connect(lp).connect(ng).connect(ctx.destination);
+    noise.connect(lp).connect(ng).connect(this.out());
     noise.start(now);
     noise.stop(now + 0.13);
 
@@ -51,7 +71,7 @@ export class AudioManager {
     const og = ctx.createGain();
     og.gain.setValueAtTime(0.5, now);
     og.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
-    osc.connect(og).connect(ctx.destination);
+    osc.connect(og).connect(this.out());
     osc.start(now);
     osc.stop(now + 0.15);
   }
@@ -59,9 +79,8 @@ export class AudioManager {
   /** Springy "boi-oing" with downward glide + vibrato. */
   boing(): void {
     const ctx = this.ctx;
-    if (!ctx || this.muted) return;
+    if (!ctx || !this.enabled) return;
     const now = ctx.currentTime;
-
     const osc = ctx.createOscillator();
     osc.type = "triangle";
     const f0 = this.rnd(180, 0.1);
@@ -78,7 +97,7 @@ export class AudioManager {
     g.gain.setValueAtTime(0.0001, now);
     g.gain.exponentialRampToValueAtTime(0.35, now + 0.01);
     g.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
-    osc.connect(g).connect(ctx.destination);
+    osc.connect(g).connect(this.out());
     osc.start(now);
     lfo.start(now);
     osc.stop(now + 0.3);
@@ -88,7 +107,7 @@ export class AudioManager {
   /** Short cartoon yelp. */
   ow(): void {
     const ctx = this.ctx;
-    if (!ctx || this.muted) return;
+    if (!ctx || !this.enabled) return;
     const now = ctx.currentTime;
     const osc = ctx.createOscillator();
     osc.type = "sawtooth";
@@ -102,7 +121,7 @@ export class AudioManager {
     g.gain.setValueAtTime(0.0001, now);
     g.gain.exponentialRampToValueAtTime(0.3, now + 0.02);
     g.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
-    osc.connect(bp).connect(g).connect(ctx.destination);
+    osc.connect(bp).connect(g).connect(this.out());
     osc.start(now);
     osc.stop(now + 0.17);
   }

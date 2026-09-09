@@ -7,6 +7,17 @@ export interface Strings {
   unmute: string;
   rage: string;
   langLabel: string; // label shown ON the toggle = the language you'd switch TO
+  settingsTitle: string;
+  nameLabel: string;
+  photoLabel: string;
+  choosePhoto: string;
+  removePhoto: string;
+  volumeLabel: string;
+  soundLabel: string;
+  languageLabel: string;
+  closeLabel: string;
+  onLabel: string;
+  offLabel: string;
   combo: (n: number) => string;
   best: (n: number) => string;
   words: string[];
@@ -21,6 +32,17 @@ const STRINGS: Record<Lang, Strings> = {
     unmute: "取消静音",
     rage: "怒气值",
     langLabel: "EN",
+    settingsTitle: "设置",
+    nameLabel: "角色名字",
+    photoLabel: "角色照片",
+    choosePhoto: "选择照片",
+    removePhoto: "移除照片",
+    volumeLabel: "音量",
+    soundLabel: "声音",
+    languageLabel: "语言",
+    closeLabel: "关闭",
+    onLabel: "开",
+    offLabel: "关",
     combo: (n) => `${n}连击`,
     best: (n) => `最高 ${n}连击`,
     words: ["砰!", "哎哟!", "嘭!", "咚!", "哐!", "啪!", "痛!"],
@@ -33,6 +55,17 @@ const STRINGS: Record<Lang, Strings> = {
     unmute: "UNMUTE",
     rage: "RAGE",
     langLabel: "中",
+    settingsTitle: "Settings",
+    nameLabel: "Character name",
+    photoLabel: "Character photo",
+    choosePhoto: "Choose photo",
+    removePhoto: "Remove photo",
+    volumeLabel: "Volume",
+    soundLabel: "Sound",
+    languageLabel: "Language",
+    closeLabel: "Close",
+    onLabel: "On",
+    offLabel: "Off",
     combo: (n) => `${n}x`,
     best: (n) => `BEST ${n}x`,
     words: ["POW!", "OW!", "BONK!", "OOF!", "WHAM!", "SMACK!"],

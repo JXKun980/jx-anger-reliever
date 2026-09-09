@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { HIT } from "../constants";
+import { HIT, VIRTUAL } from "../constants";
 import { RegKey } from "../types";
 import { Victim } from "../objects/Victim";
 import { ComboSystem } from "../systems/ComboSystem";
@@ -9,6 +9,8 @@ import { AudioManager } from "../audio/AudioManager";
 import { FaceUpload } from "../util/FaceUpload";
 import { generateTextures, hitBurst } from "../fx/Particles";
 import { drawBackground, flash, floatingText, shake } from "../fx/Juice";
+import { getSettings, setName, setSoundOn, setVolume } from "../settings";
+import { SettingsModal } from "../ui/SettingsModal";
 import type { UIScene } from "./UIScene";
 
 export class GameScene extends Phaser.Scene {
@@ -18,6 +20,8 @@ export class GameScene extends Phaser.Scene {
   private bruises!: BruiseLayer;
   private audio!: AudioManager;
   private faceUpload!: FaceUpload;
+  private nameText!: Phaser.GameObjects.Text;
+  private settingsModal!: SettingsModal;
 
   private freezeUntil = 0;
   private unlocked = false;
@@ -36,11 +40,50 @@ export class GameScene extends Phaser.Scene {
     this.combo = new ComboSystem();
     this.rage = new RageMeter();
     this.audio = new AudioManager();
+    this.audio.setVolume(getSettings().volume);
+    this.audio.setEnabled(getSettings().soundOn);
     this.faceUpload = new FaceUpload(this);
     this.bruises = new BruiseLayer(
       this.victim.parts.bruiseLayer,
       this.victim.headRadius,
     );
+
+    this.nameText = this.add
+      .text(VIRTUAL.width / 2, 395, getSettings().name, {
+        fontFamily: "system-ui, sans-serif",
+        fontSize: "46px",
+        fontStyle: "bold",
+        color: "#ffffff",
+        stroke: "#22242e",
+        strokeThickness: 8,
+      })
+      .setOrigin(0.5)
+      .setDepth(30);
+
+    this.settingsModal = new SettingsModal({
+      getName: () => getSettings().name,
+      setName: (n) => {
+        setName(n);
+        this.nameText.setText(getSettings().name);
+      },
+      getVolume: () => getSettings().volume,
+      setVolume: (v) => {
+        setVolume(v);
+        this.audio.unlock();
+        this.audio.setVolume(v);
+      },
+      getSoundOn: () => getSettings().soundOn,
+      setSoundOn: (on) => {
+        setSoundOn(on);
+        this.audio.setEnabled(on);
+      },
+      onLanguageChange: () => {
+        const ui = this.scene.get("UIScene") as UIScene | undefined;
+        ui?.refreshLang();
+      },
+      pickPhoto: () => void this.pickFace(),
+      clearPhoto: () => this.clearFace(),
+    });
 
     this.rage.onFull = () => {
       this.victim.knockout(this.lastDirX);
@@ -118,9 +161,8 @@ export class GameScene extends Phaser.Scene {
     this.victim.clearFaceTexture();
   }
 
-  toggleMute(): boolean {
-    this.audio.muted = !this.audio.muted;
-    return this.audio.muted;
+  openSettings(): void {
+    this.settingsModal.open();
   }
 
   update(time: number, delta: number): void {

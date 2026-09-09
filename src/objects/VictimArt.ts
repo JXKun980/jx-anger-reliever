@@ -66,7 +66,9 @@ export function buildVictim(scene: Phaser.Scene, x: number, y: number): VictimPa
   const ear2 = scene.add.ellipse(HEAD_R, 6, 30, 44, COLORS.skinShade);
   const hair = scene.add.graphics();
   hair.fillStyle(COLORS.hair, 1);
-  hair.slice(0, -18, HEAD_R + 6, Phaser.Math.DegToRad(200), Phaser.Math.DegToRad(340), true);
+  hair.beginPath();
+  hair.arc(0, 0, HEAD_R + 1, Phaser.Math.DegToRad(200), Phaser.Math.DegToRad(340), false);
+  hair.closePath();
   hair.fillPath();
   head.add([ear1, ear2, skull, hair]);
 
@@ -117,14 +119,15 @@ function buildFaces(scene: Phaser.Scene): Faces {
   const container = scene.add.container(0, 0);
 
   const idle = scene.add.container(0, 0);
-  const eyeL = scene.add.ellipse(-34, -6, 34, 40, COLORS.eyeWhite);
-  const eyeR = scene.add.ellipse(34, -6, 34, 40, COLORS.eyeWhite);
-  const pupL = scene.add.ellipse(-34, -2, 14, 16, COLORS.pupil);
-  const pupR = scene.add.ellipse(34, -2, 14, 16, COLORS.pupil);
-  const browL = roundedRect(scene, 34, 8, COLORS.hair, 4).setPosition(-34, -30).setAngle(8);
-  const browR = roundedRect(scene, 34, 8, COLORS.hair, 4).setPosition(34, -30).setAngle(-8);
-  const mouth = roundedRect(scene, 46, 12, COLORS.mouth, 6).setPosition(0, 46);
-  idle.add([eyeL, eyeR, pupL, pupR, browL, browR, mouth]);
+  const eyeL = scene.add.ellipse(-34, -4, 32, 38, COLORS.eyeWhite);
+  const eyeR = scene.add.ellipse(34, -4, 32, 38, COLORS.eyeWhite);
+  const pupL = scene.add.ellipse(-32, 0, 14, 16, COLORS.pupil);
+  const pupR = scene.add.ellipse(32, 0, 14, 16, COLORS.pupil);
+  const browL = roundedRect(scene, 30, 7, COLORS.hair, 4).setPosition(-34, -26).setAngle(6);
+  const browR = roundedRect(scene, 30, 7, COLORS.hair, 4).setPosition(34, -26).setAngle(-6);
+  const nose = scene.add.ellipse(0, 22, 22, 28, COLORS.skinShade);
+  const mouth = roundedRect(scene, 44, 12, COLORS.mouth, 6).setPosition(0, 52);
+  idle.add([eyeL, eyeR, pupL, pupR, browL, browR, nose, mouth]);
 
   const ow = scene.add.container(0, 0).setVisible(false);
   ow.add(makeX(scene, -34, -6));
