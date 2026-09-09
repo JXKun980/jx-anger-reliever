@@ -10,7 +10,19 @@ export interface SettingsCallbacks {
   onLanguageChange: (lang: Lang) => void;
   pickPhoto: () => void;
   clearPhoto: () => void;
+  getHairHue: () => number;
+  setHairHue: (h: number) => void;
+  getShirtHue: () => number;
+  setShirtHue: (h: number) => void;
+  getPantsHue: () => number;
+  setPantsHue: (h: number) => void;
+  getSkinTone: () => number;
+  setSkinTone: (t: number) => void;
 }
+
+const HUE_GRADIENT =
+  "linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)";
+const SKIN_GRADIENT = "linear-gradient(to right, #ffe0bd, #8a5a3c, #4a2c1a)";
 
 const PANEL_BG = "#1b2030";
 const FIELD_BG = "#12141c";
@@ -37,6 +49,14 @@ export class SettingsModal {
   private removeBtn: HTMLButtonElement;
   private volumeField: HTMLDivElement;
   private volumeSlider: HTMLInputElement;
+  private hairField: HTMLDivElement;
+  private hairSlider: HTMLInputElement;
+  private topField: HTMLDivElement;
+  private topSlider: HTMLInputElement;
+  private bottomField: HTMLDivElement;
+  private bottomSlider: HTMLInputElement;
+  private skinField: HTMLDivElement;
+  private skinSlider: HTMLInputElement;
   private soundField: HTMLDivElement;
   private soundBtn: HTMLButtonElement;
   private langField: HTMLDivElement;
@@ -98,6 +118,15 @@ export class SettingsModal {
     this.volumeSlider.max = "100";
     this.volumeField = this.field(this.volumeSlider);
 
+    this.hairSlider = this.colorSlider(HUE_GRADIENT, 360);
+    this.hairField = this.field(this.hairSlider);
+    this.topSlider = this.colorSlider(HUE_GRADIENT, 360);
+    this.topField = this.field(this.topSlider);
+    this.bottomSlider = this.colorSlider(HUE_GRADIENT, 360);
+    this.bottomField = this.field(this.bottomSlider);
+    this.skinSlider = this.colorSlider(SKIN_GRADIENT, 100);
+    this.skinField = this.field(this.skinSlider);
+
     this.soundBtn = this.button(GREEN);
     this.soundField = this.field(this.soundBtn);
 
@@ -117,6 +146,10 @@ export class SettingsModal {
       this.photoField,
       this.volumeField,
       this.soundField,
+      this.hairField,
+      this.topField,
+      this.bottomField,
+      this.skinField,
       this.langField,
       this.closeBtn,
     );
@@ -137,6 +170,23 @@ export class SettingsModal {
     label.dataset.role = "label";
     wrap.append(label, control);
     return wrap;
+  }
+
+  private colorSlider(gradient: string, max: number): HTMLInputElement {
+    const s = el("input", {
+      width: "100%",
+      height: "22px",
+      borderRadius: "11px",
+      background: gradient,
+      cursor: "pointer",
+      appearance: "none",
+      boxSizing: "border-box",
+    });
+    (s.style as unknown as { webkitAppearance: string }).webkitAppearance = "none";
+    s.type = "range";
+    s.min = "0";
+    s.max = String(max);
+    return s;
   }
 
   private button(bg: string): HTMLButtonElement {
@@ -168,6 +218,18 @@ export class SettingsModal {
     this.volumeSlider.addEventListener("input", () => {
       this.cb.setVolume(Number(this.volumeSlider.value) / 100);
     });
+    this.hairSlider.addEventListener("input", () => {
+      this.cb.setHairHue(Number(this.hairSlider.value));
+    });
+    this.topSlider.addEventListener("input", () => {
+      this.cb.setShirtHue(Number(this.topSlider.value));
+    });
+    this.bottomSlider.addEventListener("input", () => {
+      this.cb.setPantsHue(Number(this.bottomSlider.value));
+    });
+    this.skinSlider.addEventListener("input", () => {
+      this.cb.setSkinTone(Number(this.skinSlider.value) / 100);
+    });
     this.soundBtn.addEventListener("click", () => {
       this.cb.setSoundOn(!this.cb.getSoundOn());
       this.render();
@@ -190,6 +252,10 @@ export class SettingsModal {
     this.setLabel(this.photoField, s.photoLabel);
     this.setLabel(this.volumeField, s.volumeLabel);
     this.setLabel(this.soundField, s.soundLabel);
+    this.setLabel(this.hairField, s.hairColorLabel);
+    this.setLabel(this.topField, s.topColorLabel);
+    this.setLabel(this.bottomField, s.bottomColorLabel);
+    this.setLabel(this.skinField, s.skinColorLabel);
     this.setLabel(this.langField, s.languageLabel);
     this.chooseBtn.textContent = s.choosePhoto;
     this.removeBtn.textContent = s.removePhoto;
@@ -209,6 +275,10 @@ export class SettingsModal {
   open(): void {
     this.nameInput.value = this.cb.getName();
     this.volumeSlider.value = String(Math.round(this.cb.getVolume() * 100));
+    this.hairSlider.value = String(Math.round(this.cb.getHairHue()));
+    this.topSlider.value = String(Math.round(this.cb.getShirtHue()));
+    this.bottomSlider.value = String(Math.round(this.cb.getPantsHue()));
+    this.skinSlider.value = String(Math.round(this.cb.getSkinTone() * 100));
     this.render();
     this.backdrop.style.display = "flex";
   }

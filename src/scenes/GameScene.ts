@@ -1,22 +1,23 @@
 import Phaser from "phaser";
 import { HIT, VIRTUAL } from "../constants";
+import { RES } from "../res";
 import { RegKey } from "../types";
 import { Victim } from "../objects/Victim";
 import { ComboSystem } from "../systems/ComboSystem";
-import { RageMeter } from "../systems/RageMeter";
+import { HealthMeter } from "../systems/HealthMeter";
 import { BruiseLayer } from "../systems/BruiseLayer";
 import { AudioManager } from "../audio/AudioManager";
 import { FaceUpload } from "../util/FaceUpload";
 import { generateTextures, hitBurst } from "../fx/Particles";
 import { drawBackground, flash, floatingText, shake } from "../fx/Juice";
-import { getSettings, setName, setSoundOn, setVolume } from "../settings";
+import { getSettings, setName, setSoundOn, setVolume, setHairHue, setShirtHue, setPantsHue, setSkinTone } from "../settings";
 import { SettingsModal } from "../ui/SettingsModal";
 import type { UIScene } from "./UIScene";
 
 export class GameScene extends Phaser.Scene {
   private victim!: Victim;
   private combo!: ComboSystem;
-  private rage!: RageMeter;
+  private health!: HealthMeter;
   private bruises!: BruiseLayer;
   private audio!: AudioManager;
   private faceUpload!: FaceUpload;
@@ -33,12 +34,14 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.cameras.main.setZoom(RES);
+    this.cameras.main.centerOn(VIRTUAL.width / 2, VIRTUAL.height / 2);
     drawBackground(this);
     generateTextures(this);
 
     this.victim = new Victim(this);
     this.combo = new ComboSystem();
-    this.rage = new RageMeter();
+    this.health = new HealthMeter();
     this.audio = new AudioManager();
     this.audio.setVolume(getSettings().volume);
     this.audio.setEnabled(getSettings().soundOn);
@@ -47,6 +50,7 @@ export class GameScene extends Phaser.Scene {
       this.victim.parts.bruiseLayer,
       this.victim.headRadius,
     );
+    this.applyColors();
 
     this.nameText = this.add
       .text(VIRTUAL.width / 2, 395, getSettings().name, {
@@ -58,6 +62,7 @@ export class GameScene extends Phaser.Scene {
         strokeThickness: 8,
       })
       .setOrigin(0.5)
+      .setResolution(RES)
       .setDepth(30);
 
     this.settingsModal = new SettingsModal({
@@ -83,9 +88,29 @@ export class GameScene extends Phaser.Scene {
       },
       pickPhoto: () => void this.pickFace(),
       clearPhoto: () => this.clearFace(),
+      getHairHue: () => getSettings().hairHue,
+      setHairHue: (h) => {
+        setHairHue(h);
+        this.victim.parts.recolor.hair(h);
+      },
+      getShirtHue: () => getSettings().shirtHue,
+      setShirtHue: (h) => {
+        setShirtHue(h);
+        this.victim.parts.recolor.shirt(h);
+      },
+      getPantsHue: () => getSettings().pantsHue,
+      setPantsHue: (h) => {
+        setPantsHue(h);
+        this.victim.parts.recolor.pants(h);
+      },
+      getSkinTone: () => getSettings().skinTone,
+      setSkinTone: (tn) => {
+        setSkinTone(tn);
+        this.victim.parts.recolor.skin(tn);
+      },
     });
 
-    this.rage.onFull = () => {
+    this.health.onEmpty = () => {
       this.victim.knockout(this.lastDirX);
       const hw = this.victim.headWorld();
       hitBurst(this, hw.x, hw.y, true);
@@ -99,7 +124,7 @@ export class GameScene extends Phaser.Scene {
 
     this.registry.set(RegKey.Combo, 0);
     this.registry.set(RegKey.Best, this.combo.best);
-    this.registry.set(RegKey.Rage, 0);
+    this.registry.set(RegKey.Health, 1);
 
     this.scene.launch("UIScene");
   }
@@ -127,7 +152,7 @@ export class GameScene extends Phaser.Scene {
     const strength = this.combo.strength();
     const hit = this.victim.resolveHit(pointer.worldX, pointer.worldY, strength);
     this.lastDirX = hit.dirX;
-    this.rage.addHit();
+    this.health.addHit();
     this.bruises.maybeAdd(this);
 
     const big = strength > 1.5;
@@ -146,10 +171,10 @@ export class GameScene extends Phaser.Scene {
   healReset(): void {
     this.bruises.healAll();
     this.combo.reset();
-    this.rage.reset();
+    this.health.heal();
     this.victim.reset();
     this.registry.set(RegKey.Combo, 0);
-    this.registry.set(RegKey.Rage, 0);
+    this.registry.set(RegKey.Health, 1);
   }
 
   async pickFace(): Promise<void> {
@@ -165,15 +190,23 @@ export class GameScene extends Phaser.Scene {
     this.settingsModal.open();
   }
 
+  private applyColors(): void {
+    const s = getSettings();
+    this.victim.parts.recolor.hair(s.hairHue);
+    this.victim.parts.recolor.shirt(s.shirtHue);
+    this.victim.parts.recolor.pants(s.pantsHue);
+    this.victim.parts.recolor.skin(s.skinTone);
+  }
+
   update(time: number, delta: number): void {
     const dt = delta / 1000;
     if (time >= this.freezeUntil) this.victim.update(dt);
     this.combo.update(dt);
-    this.rage.update(dt);
+    this.health.update(dt);
     this.bruises.update(dt);
 
     this.registry.set(RegKey.Combo, this.combo.count);
     this.registry.set(RegKey.Best, this.combo.best);
-    this.registry.set(RegKey.Rage, this.rage.value);
+    this.registry.set(RegKey.Health, this.health.value);
   }
 }

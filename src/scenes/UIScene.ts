@@ -1,7 +1,9 @@
 import Phaser from "phaser";
 import { COLORS, VIRTUAL } from "../constants";
+import { RES } from "../res";
 import { RegKey } from "../types";
 import { t } from "../i18n";
+import { lerpInt } from "../util/color";
 import type { GameScene } from "./GameScene";
 
 interface UiButton {
@@ -15,8 +17,8 @@ const HEART = { cx: VIRTUAL.width - 74, cy: 184 };
 export class UIScene extends Phaser.Scene {
   private comboText!: Phaser.GameObjects.Text;
   private bestText!: Phaser.GameObjects.Text;
-  private rageBar!: Phaser.GameObjects.Graphics;
-  private rageLabel!: Phaser.GameObjects.Text;
+  private healthBar!: Phaser.GameObjects.Graphics;
+  private healthLabel!: Phaser.GameObjects.Text;
   private buttons: UiButton[] = [];
 
   constructor() {
@@ -28,6 +30,9 @@ export class UIScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.cameras.main.setZoom(RES);
+    this.cameras.main.centerOn(VIRTUAL.width / 2, VIRTUAL.height / 2);
+
     this.comboText = this.add
       .text(VIRTUAL.width / 2, 250, "", {
         fontFamily: "system-ui, sans-serif",
@@ -38,6 +43,7 @@ export class UIScene extends Phaser.Scene {
         strokeThickness: 12,
       })
       .setOrigin(0.5)
+      .setResolution(RES)
       .setDepth(100);
 
     this.bestText = this.add
@@ -46,18 +52,20 @@ export class UIScene extends Phaser.Scene {
         fontSize: "30px",
         color: "#9aa3c0",
       })
-      .setOrigin(0.5);
+      .setOrigin(0.5)
+      .setResolution(RES);
 
-    this.rageBar = this.add.graphics().setDepth(100);
+    this.healthBar = this.add.graphics().setDepth(100);
 
-    this.rageLabel = this.add
-      .text(40, 44, t().rage, {
+    this.healthLabel = this.add
+      .text(40, 44, t().health, {
         fontFamily: "system-ui, sans-serif",
         fontSize: "24px",
         fontStyle: "bold",
-        color: "#ff8a8a",
+        color: "#8ad6a0",
       })
-      .setOrigin(0, 0.5);
+      .setOrigin(0, 0.5)
+      .setResolution(RES);
 
     this.makeCircleButton(GEAR.cx, GEAR.cy, "gear", () => this.game_().openSettings());
     this.makeCircleButton(HEART.cx, HEART.cy, "heart", () => this.game_().healReset());
@@ -112,11 +120,19 @@ export class UIScene extends Phaser.Scene {
 
   private drawHeart(): Phaser.GameObjects.Graphics {
     const g = this.add.graphics();
-    const lr = BTN_R * 0.32;
-    g.fillStyle(0x33c46b, 1);
-    g.fillCircle(-lr * 0.92, -lr * 0.5, lr);
-    g.fillCircle(lr * 0.92, -lr * 0.5, lr);
-    g.fillTriangle(-lr * 1.85, -lr * 0.2, lr * 1.85, -lr * 0.2, 0, lr * 1.95);
+    const scale = BTN_R / 30;
+    const cyOff = 2.5 * scale;
+    const pts: Phaser.Geom.Point[] = [];
+    const steps = 64;
+    for (let i = 0; i <= steps; i++) {
+      const a = (i / steps) * Math.PI * 2;
+      const x = 16 * Math.sin(a) ** 3;
+      const y =
+        13 * Math.cos(a) - 5 * Math.cos(2 * a) - 2 * Math.cos(3 * a) - Math.cos(4 * a);
+      pts.push(new Phaser.Geom.Point(x * scale, -y * scale - cyOff));
+    }
+    g.fillStyle(0x2fd06b, 1);
+    g.fillPoints(pts, true);
     return g;
   }
 
@@ -129,7 +145,7 @@ export class UIScene extends Phaser.Scene {
   }
 
   refreshLang(): void {
-    this.rageLabel.setText(t().rage);
+    this.healthLabel.setText(t().health);
     this.updateHud();
   }
 
@@ -151,20 +167,24 @@ export class UIScene extends Phaser.Scene {
   }
 
   update(): void {
-    const rage = Number(this.registry.get(RegKey.Rage) ?? 0);
+    const health = Number(this.registry.get(RegKey.Health) ?? 1);
     const x = 180;
     const y = 44;
     const w = 380;
     const h = 26;
-    const g = this.rageBar;
+    const g = this.healthBar;
     g.clear();
-    g.fillStyle(COLORS.rageBg, 1);
+    g.fillStyle(COLORS.healthBg, 1);
     g.fillRoundedRect(x, y - h / 2, w, h, 13);
-    if (rage > 0) {
-      g.fillStyle(COLORS.rage, 1);
-      g.fillRoundedRect(x, y - h / 2, Math.max(h, w * rage), h, 13);
+    if (health > 0) {
+      const col =
+        health > 0.5
+          ? lerpInt(COLORS.healthMid, COLORS.healthHigh, (health - 0.5) * 2)
+          : lerpInt(COLORS.healthLow, COLORS.healthMid, health * 2);
+      g.fillStyle(col, 1);
+      g.fillRoundedRect(x, y - h / 2, Math.max(h, w * health), h, 13);
     }
-    if (rage > 0.85) {
+    if (health > 0 && health < 0.2) {
       g.lineStyle(3, 0xffffff, 0.6 + Math.sin(this.time.now / 80) * 0.3);
       g.strokeRoundedRect(x, y - h / 2, w, h, 13);
     }

@@ -13,5 +13,5 @@ export interface HitResult {
 export const enum RegKey {
   Combo = "combo",
   Best = "best",
-  Rage = "rage",
+  Health = "health",
 }

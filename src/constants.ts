@@ -21,6 +21,10 @@ export const COLORS = {
   bruise: 0x8e5fb0,
   rage: 0xff4d4d,
   rageBg: 0x33384d,
+  healthHigh: 0x33c46b,
+  healthMid: 0xf5c542,
+  healthLow: 0xff4d4d,
+  healthBg: 0x33384d,
   text: 0xffffff,
   textStroke: 0x22242e,
   button: 0x2f3550,
@@ -68,6 +72,11 @@ export const RAGE = {
   perHit: 0.06,
   drainPerSec: 0.04,
   fullReactionCooldownMs: 900,
+};
+
+export const HEALTH = {
+  damagePerHit: 0.06,
+  koCooldownMs: 900,
 };
 
 export const BRUISE = {

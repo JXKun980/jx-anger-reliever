@@ -5,7 +5,7 @@ export interface Strings {
   face: string;
   mute: string;
   unmute: string;
-  rage: string;
+  health: string;
   langLabel: string; // label shown ON the toggle = the language you'd switch TO
   settingsTitle: string;
   nameLabel: string;
@@ -15,6 +15,10 @@ export interface Strings {
   volumeLabel: string;
   soundLabel: string;
   languageLabel: string;
+  hairColorLabel: string;
+  topColorLabel: string;
+  bottomColorLabel: string;
+  skinColorLabel: string;
   closeLabel: string;
   onLabel: string;
   offLabel: string;
@@ -30,7 +34,7 @@ const STRINGS: Record<Lang, Strings> = {
     face: "换脸",
     mute: "静音",
     unmute: "取消静音",
-    rage: "怒气值",
+    health: "生命值",
     langLabel: "EN",
     settingsTitle: "设置",
     nameLabel: "角色名字",
@@ -40,6 +44,10 @@ const STRINGS: Record<Lang, Strings> = {
     volumeLabel: "音量",
     soundLabel: "声音",
     languageLabel: "语言",
+    hairColorLabel: "头发颜色",
+    topColorLabel: "上衣颜色",
+    bottomColorLabel: "裤子颜色",
+    skinColorLabel: "肤色",
     closeLabel: "关闭",
     onLabel: "开",
     offLabel: "关",
@@ -53,7 +61,7 @@ const STRINGS: Record<Lang, Strings> = {
     face: "FACE",
     mute: "MUTE",
     unmute: "UNMUTE",
-    rage: "RAGE",
+    health: "HEALTH",
     langLabel: "中",
     settingsTitle: "Settings",
     nameLabel: "Character name",
@@ -63,6 +71,10 @@ const STRINGS: Record<Lang, Strings> = {
     volumeLabel: "Volume",
     soundLabel: "Sound",
     languageLabel: "Language",
+    hairColorLabel: "Hair colour",
+    topColorLabel: "Top colour",
+    bottomColorLabel: "Bottom colour",
+    skinColorLabel: "Skin colour",
     closeLabel: "Close",
     onLabel: "On",
     offLabel: "Off",

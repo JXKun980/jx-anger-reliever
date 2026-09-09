@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { COLORS, HIT, VIRTUAL } from "../constants";
+import { RES } from "../res";
 import { t } from "../i18n";
 
 export function shake(scene: Phaser.Scene, combo: number, big: boolean): void {
@@ -47,6 +48,7 @@ export function floatingText(
     strokeThickness: big ? 10 : 7,
   });
   txt.setOrigin(0.5);
+  txt.setResolution(RES);
   txt.setDepth(60);
   txt.setAngle(Phaser.Math.Between(-14, 14));
   txt.setScale(0.4);
