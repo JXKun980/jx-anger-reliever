@@ -10,7 +10,21 @@ import { AudioManager } from "../audio/AudioManager";
 import { FaceUpload } from "../util/FaceUpload";
 import { generateTextures, hitBurst } from "../fx/Particles";
 import { drawBackground, flash, floatingText, shake } from "../fx/Juice";
-import { getSettings, setName, setSoundOn, setVolume, setHairHue, setShirtHue, setPantsHue, setSkinTone } from "../settings";
+import {
+  getSettings,
+  setName,
+  setSoundOn,
+  setVolume,
+  setHairHue,
+  setHairSat,
+  setShirtHue,
+  setShirtSat,
+  setPantsHue,
+  setPantsSat,
+  setSkinTone,
+  exportSettings,
+  importSettings,
+} from "../settings";
 import { SettingsModal } from "../ui/SettingsModal";
 import type { UIScene } from "./UIScene";
 
@@ -91,22 +105,44 @@ export class GameScene extends Phaser.Scene {
       getHairHue: () => getSettings().hairHue,
       setHairHue: (h) => {
         setHairHue(h);
-        this.victim.parts.recolor.hair(h);
+        this.victim.parts.recolor.hair(h, getSettings().hairSat);
+      },
+      getHairSat: () => getSettings().hairSat,
+      setHairSat: (s) => {
+        setHairSat(s);
+        this.victim.parts.recolor.hair(getSettings().hairHue, s);
       },
       getShirtHue: () => getSettings().shirtHue,
       setShirtHue: (h) => {
         setShirtHue(h);
-        this.victim.parts.recolor.shirt(h);
+        this.victim.parts.recolor.shirt(h, getSettings().shirtSat);
+      },
+      getShirtSat: () => getSettings().shirtSat,
+      setShirtSat: (s) => {
+        setShirtSat(s);
+        this.victim.parts.recolor.shirt(getSettings().shirtHue, s);
       },
       getPantsHue: () => getSettings().pantsHue,
       setPantsHue: (h) => {
         setPantsHue(h);
-        this.victim.parts.recolor.pants(h);
+        this.victim.parts.recolor.pants(h, getSettings().pantsSat);
+      },
+      getPantsSat: () => getSettings().pantsSat,
+      setPantsSat: (s) => {
+        setPantsSat(s);
+        this.victim.parts.recolor.pants(getSettings().pantsHue, s);
       },
       getSkinTone: () => getSettings().skinTone,
       setSkinTone: (tn) => {
         setSkinTone(tn);
         this.victim.parts.recolor.skin(tn);
+      },
+      exportCode: () => exportSettings(),
+      importCode: (code) => {
+        if (!importSettings(code)) return false;
+        this.nameText.setText(getSettings().name);
+        this.applyColors();
+        return true;
       },
     });
 
@@ -192,9 +228,9 @@ export class GameScene extends Phaser.Scene {
 
   private applyColors(): void {
     const s = getSettings();
-    this.victim.parts.recolor.hair(s.hairHue);
-    this.victim.parts.recolor.shirt(s.shirtHue);
-    this.victim.parts.recolor.pants(s.pantsHue);
+    this.victim.parts.recolor.hair(s.hairHue, s.hairSat);
+    this.victim.parts.recolor.shirt(s.shirtHue, s.shirtSat);
+    this.victim.parts.recolor.pants(s.pantsHue, s.pantsSat);
     this.victim.parts.recolor.skin(s.skinTone);
   }
 

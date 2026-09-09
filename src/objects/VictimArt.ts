@@ -74,9 +74,9 @@ function ell(
 }
 
 export interface Recolorers {
-  hair: (hue: number) => void;
-  shirt: (hue: number) => void;
-  pants: (hue: number) => void;
+  hair: (hue: number, sat: number) => void;
+  shirt: (hue: number, sat: number) => void;
+  pants: (hue: number, sat: number) => void;
   skin: (tone: number) => void;
 }
 
@@ -133,7 +133,7 @@ export function buildVictim(scene: Phaser.Scene, x: number, y: number): VictimPa
     hair.clear();
     hair.fillStyle(c, 1);
     hair.beginPath();
-    hair.arc(0, 0, HEAD_R + 1, Phaser.Math.DegToRad(200), Phaser.Math.DegToRad(340), false);
+    hair.arc(0, -16, HEAD_R + 3, Phaser.Math.DegToRad(200), Phaser.Math.DegToRad(340), false);
     hair.closePath();
     hair.fillPath();
   };
@@ -151,17 +151,19 @@ export function buildVictim(scene: Phaser.Scene, x: number, y: number): VictimPa
   root.add([shadow, legLeft, legRight, armLeft, armRight, torso, head]);
 
   const recolor: Recolorers = {
-    hair: (hue) => {
-      const base = hslToInt(hue, 0.55, 0.28);
+    hair: (hue, sat) => {
+      const base = hslToInt(hue, 0.6, 0.5 * sat);
       g.hair.forEach((f) => f(base));
     },
-    shirt: (hue) => {
-      g.shirtBase.forEach((f) => f(hslToInt(hue, 0.68, 0.58)));
-      g.shirtShade.forEach((f) => f(hslToInt(hue, 0.68, 0.46)));
+    shirt: (hue, sat) => {
+      const l = 0.62 * sat;
+      g.shirtBase.forEach((f) => f(hslToInt(hue, 0.7, l)));
+      g.shirtShade.forEach((f) => f(hslToInt(hue, 0.7, l * 0.78)));
     },
-    pants: (hue) => {
-      g.pantsBase.forEach((f) => f(hslToInt(hue, 0.32, 0.3)));
-      g.pantsShade.forEach((f) => f(hslToInt(hue, 0.32, 0.2)));
+    pants: (hue, sat) => {
+      const l = 0.5 * sat;
+      g.pantsBase.forEach((f) => f(hslToInt(hue, 0.4, l)));
+      g.pantsShade.forEach((f) => f(hslToInt(hue, 0.4, l * 0.7)));
     },
     skin: (tone) => {
       const { base, shade } = skinTone(tone);

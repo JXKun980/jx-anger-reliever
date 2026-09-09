@@ -3,8 +3,11 @@ export interface Settings {
   volume: number;
   soundOn: boolean;
   hairHue: number;
+  hairSat: number;
   shirtHue: number;
+  shirtSat: number;
   pantsHue: number;
+  pantsSat: number;
   skinTone: number;
 }
 
@@ -13,8 +16,11 @@ const DEFAULTS: Settings = {
   volume: 0.8,
   soundOn: true,
   hairHue: 22,
+  hairSat: 0.56,
   shirtHue: 217,
+  shirtSat: 0.935,
   pantsHue: 228,
+  pantsSat: 0.6,
   skinTone: 0.25,
 };
 
@@ -24,20 +30,26 @@ function num(v: unknown, min: number, max: number, fallback: number): number {
   return typeof v === "number" && v >= min && v <= max ? v : fallback;
 }
 
+function coerce(p: Partial<Settings>): Settings {
+  return {
+    name: typeof p.name === "string" && p.name.trim() ? p.name : DEFAULTS.name,
+    volume: num(p.volume, 0, 1, DEFAULTS.volume),
+    soundOn: typeof p.soundOn === "boolean" ? p.soundOn : DEFAULTS.soundOn,
+    hairHue: num(p.hairHue, 0, 360, DEFAULTS.hairHue),
+    hairSat: num(p.hairSat, 0, 1, DEFAULTS.hairSat),
+    shirtHue: num(p.shirtHue, 0, 360, DEFAULTS.shirtHue),
+    shirtSat: num(p.shirtSat, 0, 1, DEFAULTS.shirtSat),
+    pantsHue: num(p.pantsHue, 0, 360, DEFAULTS.pantsHue),
+    pantsSat: num(p.pantsSat, 0, 1, DEFAULTS.pantsSat),
+    skinTone: num(p.skinTone, 0, 1, DEFAULTS.skinTone),
+  };
+}
+
 function load(): Settings {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return { ...DEFAULTS };
-    const p = JSON.parse(raw) as Partial<Settings>;
-    return {
-      name: typeof p.name === "string" && p.name.trim() ? p.name : DEFAULTS.name,
-      volume: num(p.volume, 0, 1, DEFAULTS.volume),
-      soundOn: typeof p.soundOn === "boolean" ? p.soundOn : DEFAULTS.soundOn,
-      hairHue: num(p.hairHue, 0, 360, DEFAULTS.hairHue),
-      shirtHue: num(p.shirtHue, 0, 360, DEFAULTS.shirtHue),
-      pantsHue: num(p.pantsHue, 0, 360, DEFAULTS.pantsHue),
-      skinTone: num(p.skinTone, 0, 1, DEFAULTS.skinTone),
-    };
+    return coerce(JSON.parse(raw) as Partial<Settings>);
   } catch {
     return { ...DEFAULTS };
   }
@@ -68,22 +80,93 @@ export function setSoundOn(on: boolean): void {
   save();
 }
 
+function clampHue(h: number): number {
+  return Math.max(0, Math.min(360, h));
+}
+
+function clamp01(v: number): number {
+  return Math.max(0, Math.min(1, v));
+}
+
 export function setHairHue(h: number): void {
-  current.hairHue = Math.max(0, Math.min(360, h));
+  current.hairHue = clampHue(h);
+  save();
+}
+
+export function setHairSat(s: number): void {
+  current.hairSat = clamp01(s);
   save();
 }
 
 export function setShirtHue(h: number): void {
-  current.shirtHue = Math.max(0, Math.min(360, h));
+  current.shirtHue = clampHue(h);
+  save();
+}
+
+export function setShirtSat(s: number): void {
+  current.shirtSat = clamp01(s);
   save();
 }
 
 export function setPantsHue(h: number): void {
-  current.pantsHue = Math.max(0, Math.min(360, h));
+  current.pantsHue = clampHue(h);
+  save();
+}
+
+export function setPantsSat(s: number): void {
+  current.pantsSat = clamp01(s);
   save();
 }
 
 export function setSkinTone(t: number): void {
-  current.skinTone = Math.max(0, Math.min(1, t));
+  current.skinTone = clamp01(t);
   save();
+}
+
+const CODE_PREFIX = "AR1-";
+
+/** Serialise the character look to a shareable text code. */
+export function exportSettings(): string {
+  const c = current;
+  const compact = {
+    n: c.name,
+    hh: Math.round(c.hairHue),
+    hs: Math.round(c.hairSat * 100),
+    th: Math.round(c.shirtHue),
+    ts: Math.round(c.shirtSat * 100),
+    bh: Math.round(c.pantsHue),
+    bs: Math.round(c.pantsSat * 100),
+    sk: Math.round(c.skinTone * 100),
+  };
+  const json = JSON.stringify(compact);
+  return CODE_PREFIX + btoa(unescape(encodeURIComponent(json)));
+}
+
+/** Apply a shared text code. Returns true when it parses successfully. */
+export function importSettings(code: string): boolean {
+  try {
+    const trimmed = code.trim();
+    const body = trimmed.startsWith(CODE_PREFIX)
+      ? trimmed.slice(CODE_PREFIX.length)
+      : trimmed;
+    const json = decodeURIComponent(escape(atob(body)));
+    const c = JSON.parse(json) as Record<string, unknown>;
+    const merged = coerce({
+      name: typeof c.n === "string" ? c.n : current.name,
+      volume: current.volume,
+      soundOn: current.soundOn,
+      hairHue: Number(c.hh),
+      hairSat: Number(c.hs) / 100,
+      shirtHue: Number(c.th),
+      shirtSat: Number(c.ts) / 100,
+      pantsHue: Number(c.bh),
+      pantsSat: Number(c.bs) / 100,
+      skinTone: Number(c.sk) / 100,
+    });
+    Object.assign(current, merged);
+    save();
+    return true;
+  } catch {
+    return false;
+  }
 }

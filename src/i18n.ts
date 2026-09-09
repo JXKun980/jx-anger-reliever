@@ -16,9 +16,18 @@ export interface Strings {
   soundLabel: string;
   languageLabel: string;
   hairColorLabel: string;
+  hairSatLabel: string;
   topColorLabel: string;
+  topSatLabel: string;
   bottomColorLabel: string;
+  bottomSatLabel: string;
   skinColorLabel: string;
+  shareLabel: string;
+  copyLabel: string;
+  copiedLabel: string;
+  importLabel: string;
+  importOk: string;
+  importFail: string;
   closeLabel: string;
   onLabel: string;
   offLabel: string;
@@ -45,9 +54,18 @@ const STRINGS: Record<Lang, Strings> = {
     soundLabel: "声音",
     languageLabel: "语言",
     hairColorLabel: "头发颜色",
+    hairSatLabel: "头发饱和度",
     topColorLabel: "上衣颜色",
+    topSatLabel: "上衣饱和度",
     bottomColorLabel: "裤子颜色",
+    bottomSatLabel: "裤子饱和度",
     skinColorLabel: "肤色",
+    shareLabel: "分享代码",
+    copyLabel: "复制",
+    copiedLabel: "已复制!",
+    importLabel: "导入",
+    importOk: "已导入!",
+    importFail: "无效代码",
     closeLabel: "关闭",
     onLabel: "开",
     offLabel: "关",
@@ -72,9 +90,18 @@ const STRINGS: Record<Lang, Strings> = {
     soundLabel: "Sound",
     languageLabel: "Language",
     hairColorLabel: "Hair colour",
+    hairSatLabel: "Hair saturation",
     topColorLabel: "Top colour",
+    topSatLabel: "Top saturation",
     bottomColorLabel: "Bottom colour",
+    bottomSatLabel: "Bottom saturation",
     skinColorLabel: "Skin colour",
+    shareLabel: "Share code",
+    copyLabel: "Copy",
+    copiedLabel: "Copied!",
+    importLabel: "Import",
+    importOk: "Imported!",
+    importFail: "Invalid code",
     closeLabel: "Close",
     onLabel: "On",
     offLabel: "Off",
