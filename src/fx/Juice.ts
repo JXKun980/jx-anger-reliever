@@ -1,5 +1,6 @@
 import Phaser from "phaser";
-import { COLORS, HIT, VIRTUAL, WORDS, WORDS_RAGE } from "../constants";
+import { COLORS, HIT, VIRTUAL } from "../constants";
+import { t } from "../i18n";
 
 export function shake(scene: Phaser.Scene, combo: number, big: boolean): void {
   const t = Phaser.Math.Clamp(combo / 25, 0, 1);
@@ -34,7 +35,7 @@ export function floatingText(
   y: number,
   big: boolean,
 ): void {
-  const pool = big ? WORDS_RAGE : WORDS;
+  const pool = big ? t().wordsRage : t().words;
   const word = pool[Math.floor(Math.random() * pool.length)];
   const size = big ? 96 : 54;
   const txt = scene.add.text(x, y, word, {

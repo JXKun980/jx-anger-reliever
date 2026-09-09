@@ -18,6 +18,7 @@ export class Victim {
   private armL = new Spring1D(SPRING.rotStiffness * 0.7, SPRING.rotDamping * 0.8);
   private armR = new Spring1D(SPRING.rotStiffness * 0.7, SPRING.rotDamping * 0.8);
   private bodyX = new Spring1D(SPRING.stiffness * 0.9, SPRING.damping);
+  private bodyY = new Spring1D(SPRING.stiffness * 0.9, SPRING.damping);
 
   private t = 0;
   private faceState: FaceState = "idle";
@@ -55,23 +56,48 @@ export class Victim {
     else if (ly < 130 && Math.abs(lx) < 120) part = "torso";
     else if (Math.abs(lx) > 90) part = "arm";
 
-    // Direction: push head away from the tap horizontally, and up (uppercut).
-    let dirX = lx === 0 ? (Math.random() < 0.5 ? -1 : 1) : -Math.sign(lx);
-    dirX = Phaser.Math.Clamp(dirX * (0.5 + Math.abs(lx) / 160), -1.4, 1.4);
-
+    // Zones across body width: left 40% | middle 20% | right 40%. A side hit
+    // reads as a blow FROM that side and knocks the body the opposite way; a
+    // centre hit is frontal and is knocked straight back.
+    const frac = Phaser.Math.Clamp(lx / HIT.bodyHalfWidth, -1, 1);
     const s = strength;
-    this.headX.kick(dirX * HIT.baseImpulse * s);
-    this.headY.kick(-HIT.vertImpulse * s);
-    this.headRot.kick(dirX * HIT.rotImpulse * s);
-    this.torsoX.kick(dirX * HIT.baseImpulse * HIT.torsoFactor * s);
-    this.torsoRot.kick(dirX * HIT.rotImpulse * 0.4 * s);
-    this.armL.kick(dirX * HIT.armFactor * s);
-    this.armR.kick(dirX * HIT.armFactor * s);
-    this.bodyX.kick(dirX * HIT.baseImpulse * 0.25 * s);
+
+    if (frac < -0.2) {
+      this.sideKnock(1, s);
+    } else if (frac > 0.2) {
+      this.sideKnock(-1, s);
+    } else {
+      this.frontKnock(s);
+    }
 
     this.showFace("ow", 260 + s * 120);
 
+    const dirX = frac < -0.2 ? 1 : frac > 0.2 ? -1 : 0;
     return { part, x: worldX, y: worldY, dirX, strength: s };
+  }
+
+  private sideKnock(dir: number, s: number): void {
+    this.headX.kick(dir * HIT.baseImpulse * s);
+    this.headY.kick(-HIT.vertImpulse * 0.7 * s);
+    this.headRot.kick(dir * HIT.rotImpulse * s);
+    this.torsoX.kick(dir * HIT.baseImpulse * HIT.torsoFactor * s);
+    this.torsoRot.kick(dir * HIT.rotImpulse * 0.4 * s);
+    this.armL.kick(dir * HIT.armFactor * s);
+    this.armR.kick(dir * HIT.armFactor * s);
+    this.bodyX.kick(dir * HIT.baseImpulse * 0.25 * s);
+    this.bodyY.kick(-HIT.vertImpulse * 0.35 * s);
+  }
+
+  private frontKnock(s: number): void {
+    const jitter = (Math.random() * 2 - 1) * 40;
+    this.headX.kick(jitter * s);
+    this.headY.kick(-HIT.vertImpulse * 1.3 * s);
+    this.headRot.kick((Math.random() < 0.5 ? -1 : 1) * HIT.rotImpulse * 0.3 * s);
+    this.torsoRot.kick(0);
+    this.bodyX.kick(jitter * 0.4 * s);
+    this.bodyY.kick(-HIT.vertImpulse * 1.6 * s);
+    this.armL.kick(HIT.armFactor * 0.6 * s);
+    this.armR.kick(-HIT.armFactor * 0.6 * s);
   }
 
   /** Big multi-part reaction when the rage meter fills. */
@@ -124,6 +150,7 @@ export class Victim {
       this.armL,
       this.armR,
       this.bodyX,
+      this.bodyY,
     ]) {
       sp.reset();
     }
@@ -140,6 +167,7 @@ export class Victim {
     this.armL.update(dt, SPRING.maxRot);
     this.armR.update(dt, SPRING.maxRot);
     this.bodyX.update(dt, SPRING.maxOffset);
+    this.bodyY.update(dt, SPRING.maxOffset);
 
     // Idle breathing when settled.
     const settled = this.headX.atRest && this.headY.atRest && this.torsoRot.atRest;
@@ -147,6 +175,7 @@ export class Victim {
 
     const p = this.parts;
     p.root.x = REST_X + this.bodyX.value;
+    p.root.y = REST_Y + this.bodyY.value;
     p.head.x = this.headX.value;
     p.head.y = -210 + this.headY.value + breathe;
     p.head.rotation = this.headRot.value;
@@ -155,7 +184,10 @@ export class Victim {
     p.torso.y = breathe * 0.5;
     p.armLeft.rotation = this.armL.value;
     p.armRight.rotation = -this.armR.value;
-    p.shadow.scaleX = 1 - Math.abs(this.bodyX.value) / 900;
+    p.shadow.y = 340 - this.bodyY.value;
+    p.shadow.setScale(
+      1 - (Math.abs(this.bodyX.value) + Math.abs(this.bodyY.value)) / 900,
+    );
 
     if (this.faceTimer > 0) {
       this.faceTimer -= dt * 1000;

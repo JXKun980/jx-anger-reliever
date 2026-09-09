@@ -47,6 +47,7 @@ export const HIT = {
   flashMs: 90,
   torsoFactor: 0.35,
   armFactor: 0.9,
+  bodyHalfWidth: 170,
 };
 
 export const COMBO = { decayMs: 1200, strengthPerHit: 0.04, maxStrengthHits: 20 };
@@ -63,6 +64,3 @@ export const BRUISE = {
   addChance: 0.55,
   baseAlpha: 0.55,
 };
-
-export const WORDS = ["POW!", "OW!", "BONK!", "OOF!", "WHAM!", "YEET!", "SMACK!"];
-export const WORDS_RAGE = ["MEGA!", "K.O.!", "BOOM!", "OBLITERATED!"];

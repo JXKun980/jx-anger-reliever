@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { COLORS, VIRTUAL } from "../constants";
 import { RegKey } from "../types";
+import { t, toggleLang } from "../i18n";
 import type { GameScene } from "./GameScene";
 
 interface UiButton {
@@ -11,9 +12,14 @@ export class UIScene extends Phaser.Scene {
   private comboText!: Phaser.GameObjects.Text;
   private bestText!: Phaser.GameObjects.Text;
   private rageBar!: Phaser.GameObjects.Graphics;
+  private rageLabel!: Phaser.GameObjects.Text;
+  private healLabel!: Phaser.GameObjects.Text;
+  private faceLabel!: Phaser.GameObjects.Text;
   private muteLabel!: Phaser.GameObjects.Text;
+  private langLabel!: Phaser.GameObjects.Text;
   private buttons: UiButton[] = [];
   private faceCleared = true;
+  private muted = false;
 
   constructor() {
     super("UIScene");
@@ -46,8 +52,8 @@ export class UIScene extends Phaser.Scene {
 
     this.rageBar = this.add.graphics().setDepth(100);
 
-    this.add
-      .text(160, 30, "RAGE", {
+    this.rageLabel = this.add
+      .text(160, 84, t().rage, {
         fontFamily: "system-ui, sans-serif",
         fontSize: "24px",
         fontStyle: "bold",
@@ -55,8 +61,19 @@ export class UIScene extends Phaser.Scene {
       })
       .setOrigin(0, 0.5);
 
-    this.makeButton(150, 1210, 220, 90, "HEAL", () => this.game_().healReset());
-    this.makeButton(VIRTUAL.width - 150, 1210, 220, 90, "FACE", () =>
+    this.langLabel = this.makeButton(
+      VIRTUAL.width - 68,
+      50,
+      104,
+      64,
+      t().langLabel,
+      () => this.onLang(),
+    );
+
+    this.healLabel = this.makeButton(150, 1210, 220, 90, t().heal, () =>
+      this.game_().healReset(),
+    );
+    this.faceLabel = this.makeButton(VIRTUAL.width - 150, 1210, 220, 90, t().face, () =>
       this.onFace(),
     );
     this.muteLabel = this.makeButton(
@@ -64,17 +81,9 @@ export class UIScene extends Phaser.Scene {
       1210,
       180,
       90,
-      "MUTE",
+      t().mute,
       () => this.onMute(),
     );
-
-    this.add
-      .text(VIRTUAL.width - 150, 1268, "stays on your device", {
-        fontFamily: "system-ui, sans-serif",
-        fontSize: "20px",
-        color: "#6b7290",
-      })
-      .setOrigin(0.5);
 
     this.registry.events.on("changedata", this.onData, this);
     this.updateHud();
@@ -125,6 +134,16 @@ export class UIScene extends Phaser.Scene {
     return false;
   }
 
+  private onLang(): void {
+    toggleLang();
+    this.rageLabel.setText(t().rage);
+    this.healLabel.setText(t().heal);
+    this.faceLabel.setText(t().face);
+    this.muteLabel.setText(this.muted ? t().unmute : t().mute);
+    this.langLabel.setText(t().langLabel);
+    this.updateHud();
+  }
+
   private onFace(): void {
     if (this.faceCleared) {
       void this.game_()
@@ -139,8 +158,8 @@ export class UIScene extends Phaser.Scene {
   }
 
   private onMute(): void {
-    const muted = this.game_().toggleMute();
-    this.muteLabel.setText(muted ? "UNMUTE" : "MUTE");
+    this.muted = this.game_().toggleMute();
+    this.muteLabel.setText(this.muted ? t().unmute : t().mute);
   }
 
   private onData = (_p: unknown, key: string): void => {
@@ -151,19 +170,19 @@ export class UIScene extends Phaser.Scene {
     const combo = Number(this.registry.get(RegKey.Combo) ?? 0);
     const best = Number(this.registry.get(RegKey.Best) ?? 0);
     if (combo > 1) {
-      this.comboText.setText(`${combo}x`);
+      this.comboText.setText(t().combo(combo));
       const scale = 1 + Math.min(combo, 30) * 0.01;
       this.comboText.setScale(scale);
     } else {
       this.comboText.setText("");
     }
-    this.bestText.setText(best > 0 ? `BEST ${best}x` : "");
+    this.bestText.setText(best > 0 ? t().best(best) : "");
   }
 
   update(): void {
     const rage = Number(this.registry.get(RegKey.Rage) ?? 0);
     const x = 160;
-    const y = 30;
+    const y = 40;
     const w = VIRTUAL.width - 320;
     const h = 26;
     const g = this.rageBar;
